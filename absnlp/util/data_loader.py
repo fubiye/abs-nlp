@@ -57,24 +57,39 @@ class ConllNERDataset(data.Dataset):
             sent.append(tokens[0])
             tags.append(tokens[3])
 
-        self.sents = [_ for doc in self.docs for _ in doc['sents']]
-        self.sent_tags = [_ for doc in self.docs for _ in doc['sent_tags']]
+        self.sents = [_ for doc in self.docs for _ in doc['sents'] if len(_) > 0] 
+        self.sent_tags = [_ for doc in self.docs for _ in doc['sent_tags'] if len(_) > 0]
 
     def __getitem__(self, index):
-        return (self.sents[index], self.sent_tags[index])
+        return self.sents[index], self.sent_tags[index]
 
     def __len__(self):
         return len(self.sents)
 
-def get_loader(filepath):
+def collate_fn(batch):
+    sents = [ _[0] for _ in batch]
+    sent_tags = [ _[1] for _ in batch]
+    return sents, sent_tags
+
+def get_loader(opt, filepath):
     logger.info('loading data from: %s', filepath)
     dataset = ConllNERDataset(filepath)
-    return dataset
+    data_loader = data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=True, drop_last=True,collate_fn=collate_fn)
+    return data_loader
 
 def get_loaders(opt):
     logger.info('loading data...')
     detect_data_path(opt)
-    dataset = get_loader(opt.valid)
-    sents, tags = dataset[:10]
-    for i in range(len(sents)):
-        logger.info(" - %d \nsents: %s\ntokens: %s", i, ' '.join(sents[i]),' '.join(tags[i]))
+    loader = get_loader(opt, opt.valid)
+    for epoch in range(opt.epoches):
+        logger.info("start epoch: %d", epoch)
+        for batch, (sents, sent_tags) in enumerate(loader):
+            logger.info('batch: %d, sents size: %d', batch, len(sents))
+            print(sents)
+            if batch > 2:
+                return
+        # for batch,(sents, sent_tags) in enumerate(loader):
+        #     logger.info('batch: %d, sents size: %d', batch, len(sents))
+    # sents, tags = dataset[:1]
+    # for i in range(len(sents)):
+    #     logger.info(" - %d \nsents: %s\ntokens: %s", i, ' '.join(sents[i]),' '.join(tags[i]))
