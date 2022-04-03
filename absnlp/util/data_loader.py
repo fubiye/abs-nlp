@@ -85,8 +85,12 @@ def get_loaders(opt):
         logger.info("start epoch: %d", epoch)
         for batch, (sents, sent_tags) in enumerate(loader):
             logger.info('batch: %d, sents size: %d', batch, len(sents))
-            print(sents)
-            if batch > 2:
+            for i in range(len(sents)):
+                print('\t'.join(sents[i]))
+                print('\t'.join(sent_tags[i]))
+                print('\n')
+                
+            if batch > 0:
                 return
         # for batch,(sents, sent_tags) in enumerate(loader):
         #     logger.info('batch: %d, sents size: %d', batch, len(sents))

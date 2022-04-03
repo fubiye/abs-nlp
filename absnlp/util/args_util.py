@@ -1,27 +1,37 @@
 import logging
 import argparse
+import os
 logger = logging.getLogger(__name__)
 
 class ParserInit():
 
     def __init__(self):
         logger.info("initializing training program...")
-        self.parser = parser = argparse.ArgumentParser()
+        self.parser = argparse.ArgumentParser()
         self.add_args()
         self.opt = self.parser.parse_args()
     
     def add_args(self):
         self.add_data_params()
         self.add_training_params()
-        # self.add_hyper_parameters()
+        self.add_embedding_params()
 
     def add_data_params(self):
-        self.parser.add_argument('--cache_dir', default='d:\dataset', type=str, help="the path to store data")
+        home = os.path.expanduser('~')
+        cache_path = os.path.join(home, 'cache')
+        self.parser.add_argument('--cache_dir', default=cache_path, type=str, help="the path to store data")
         self.parser.add_argument('--dataset', default='conll2003', type=str, help="which dataset to load")
         
     def add_training_params(self):
         self.parser.add_argument('--epoches',default=1,type=int)
         self.parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+    
+    def add_embedding_params(self):
+        self.parser.add_argument('--pretrain',default='glove',type=str, help="(glove|....)")
+        self.parser.add_argument('--vector_name', default='6B', type=str)
+        self.parser.add_argument('--embedding_dim',default=50, type=int, help="embedding size")
+        
+        
 
     # def add_hyper_parameters(self):
     #     self.parser.add_argument('--batch_size', default=4, type=int, help='batch size')
