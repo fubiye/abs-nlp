@@ -1,37 +1,36 @@
 import os
 import logging
+import torch
 from torch.utils import data
 from absnlp.dataset import conll
+from absnlp.util.transform import collate_fn
 
 logger = logging.getLogger(__name__)
 
-def collate_fn(batch, vocab, tag2id):
-    sents = [vocab(sentences) for (sentences,_) in batch]
-    sent_tags = [[tag2id[tag] for tag in tags] for (_, tags) in batch]
-    return sents, sent_tags
 
 
-def get_loader(opt, filepath, vocab, tag2id):
+def get_loader(opt, filepath):
     logger.info('loading data from: %s', filepath)
     dataset = conll.ConllNERDataset(filepath)
-    data_loader = data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=True, drop_last=True,collate_fn=lambda batch:collate_fn(batch,vocab, tag2id))
+    data_loader = data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=True, drop_last=True,collate_fn=lambda batch:collate_fn(batch,opt))
     return data_loader
 
-def get_loaders(opt, vocab, tag2id):
+def get_loaders(opt):
     logger.info('loading data...')
     conll.detect_data_path(opt)
-    loader = get_loader(opt, opt.valid, vocab, tag2id)
-    for epoch in range(opt.epoches):
-        logger.info("start epoch: %d", epoch)
-        for batch, (sents, sent_tags) in enumerate(loader):
-            logger.info('batch: %d, sents size: %d', batch, len(sents))
-            for i in range(len(sents)):
-                print(sents[i])
-                print(sent_tags[i])
-                print('\n')
+    train_loader = get_loader(opt, opt.train)
+    return train_loader
+    # for epoch in range(opt.epoches):
+    #     logger.info("start epoch: %d", epoch)
+    #     for batch, (sents, sent_tags) in enumerate(loader):
+    #         logger.info('batch: %d, sents size: %d', batch, len(sents))
+    #         for i in range(len(sents)):
+    #             print(sents[i])
+    #             print(sent_tags[i])
+    #             print('\n')
                 
-            if batch > 0:
-                return
+    #         if batch > 0:
+    #             return
         # for batch,(sents, sent_tags) in enumerate(loader):
         #     logger.info('batch: %d, sents size: %d', batch, len(sents))
     # sents, tags = dataset[:1]
