@@ -23,7 +23,7 @@ def text_transform(opt):
 
 def label_transform(opt):
     tag_id_transform = lambda tags: [opt.tag2id[tag] for tag in tags]
-    tag_tensor_transform = lambda tokens: torch.cat((torch.tensor([0]),torch.tensor(tokens), torch.tensor([0])))
+    tag_tensor_transform = lambda tokens: torch.cat((torch.tensor([0]),torch.tensor(tokens,dtype=torch.float32), torch.tensor([0])))
     return sequential_transforms(tag_id_transform, tag_tensor_transform)
 
 def collate_fn(batch, opt):
@@ -34,7 +34,7 @@ def collate_fn(batch, opt):
     for sentences, sent_tags in batch:
         sents.append(sent_transform(sentences))
         tags.append(tag_transform(sent_tags))
-    sents = pad_sequence(sents, padding_value=PAD_IDX)
-    tags = pad_sequence(tags)
+    sents = pad_sequence(sents, padding_value=PAD_IDX,batch_first=True)
+    tags = pad_sequence(tags, batch_first=True)
     
     return sents, tags

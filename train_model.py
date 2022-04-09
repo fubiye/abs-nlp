@@ -1,6 +1,6 @@
 from absnlp.util.args_util import ParserInit
 from absnlp.util.data_loader import get_loaders
-from absnlp.vocab.pretrain_static import get_vocab
+from absnlp.vocab.pretrain_static import PAD_IDX, get_vocab
 from absnlp.dataset.conll import preprocess_tags
 from absnlp.model.rnn import SimpleRnnNet
 
@@ -14,15 +14,19 @@ logger = logging.getLogger(__name__)
 def train():
     for epoch in range(opt.epoches):
         logger.info("start epoch: %d", epoch)
-        for batch, (sents, sent_tags) in enumerate(train_loader):
+        for batch, (sents, target_tags) in enumerate(train_loader):
             logger.info('batch: %d, sents size: %d', batch, len(sents))
             sents = sents.to(device)
-            tags_hat = model(sents)
-            for i in range(len(sents)):
-                print(sents[i])
-                print(sent_tags[i])
-                print(tags_hat)
-                print('\n')
+            target_tags = target_tags.to(device)
+
+            logits = model(sents)
+            loss = loss_fn(logits.float(), target_tags)
+            print('loss: {}'.format(loss))
+            # for i in range(len(sents)):
+            #     print(sents[i])
+            #     print(sent_tags[i])
+            #     print(predicted_tags)
+            #     print('\n')
                 
             if batch > 0:
                 return
@@ -35,5 +39,8 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     opt.vocab_size = len(opt.vocab)
     model = SimpleRnnNet(opt).to(device)
+    loss_fn = torch.nn.CrossEntropyLoss()
+    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
+    # loss_fn = torch.nn.NLLLoss(ignore_index=PAD_IDX)
     train()
     

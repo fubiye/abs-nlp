@@ -1,4 +1,6 @@
+from tkinter import S
 from turtle import forward
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -13,6 +15,9 @@ class SimpleRnnNet(nn.Module):
     def forward(self, tokens):
         embedded = self.embedding(tokens)
         out, _ = self.lstm(embedded)
-        out = out.view(-1, out.shape[2])
         out = self.fc(out)
-        return F.log_softmax(out, dim=1)
+        # out = F.softmax(out,dim=2)
+        out = torch.argmax(out, dim=2)
+        return out
+        # return F.softmax(out, dim=2)  
+        # return F.log_softmax(out, dim=2)
