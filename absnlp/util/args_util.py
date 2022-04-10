@@ -19,13 +19,16 @@ class ParserInit():
 
     def add_data_params(self):
         home = os.path.expanduser('~')
-        cache_path = os.path.join(home, 'cache')
+        cache_path = os.path.join(home, '.cache')
+        
         self.parser.add_argument('--cache_dir', default=cache_path, type=str, help="the path to store data")
+        glove_cache_path = os.path.join(cache_path,'glove')
+        self.parser.add_argument('--glove_cache',default=glove_cache_path,type=str, help="cache dir for glove")
         self.parser.add_argument('--dataset', default='conll2003', type=str, help="which dataset to load")
         self.parser.add_argument('--num_of_tags', default=9, help='total count of tags')
         
     def add_training_params(self):
-        self.parser.add_argument('--epoches',default=1,type=int)
+        self.parser.add_argument('--epoches',default=10,type=int)
         self.parser.add_argument('--batch_size', default=32, type=int, help='batch size')
     
     def add_embedding_params(self):

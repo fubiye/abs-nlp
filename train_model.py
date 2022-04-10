@@ -15,21 +15,14 @@ def train():
     for epoch in range(opt.epoches):
         logger.info("start epoch: %d", epoch)
         for batch, (sents, target_tags) in enumerate(train_loader):
-            logger.info('batch: %d, sents size: %d', batch, len(sents))
             sents = sents.to(device)
             target_tags = target_tags.to(device)
 
             logits = model(sents)
             loss = loss_fn(logits.float(), target_tags)
-            print('loss: {}'.format(loss))
-            # for i in range(len(sents)):
-            #     print(sents[i])
-            #     print(sent_tags[i])
-            #     print(predicted_tags)
-            #     print('\n')
-                
-            if batch > 0:
-                return
+            print('[epoch: {} batch: {} loss: {}'.format(epoch, batch, loss))
+            # if batch > 0:
+            #     return
 if __name__ == '__main__':
 
     opt = ParserInit().opt
