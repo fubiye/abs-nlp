@@ -28,7 +28,7 @@ class ParserInit():
         self.parser.add_argument('--num_of_tags', default=9, help='total count of tags')
         
     def add_training_params(self):
-        self.parser.add_argument('--epoches',default=2,type=int)
+        self.parser.add_argument('--epoches',default=10,type=int)
         self.parser.add_argument('--batch_size', default=32, type=int, help='batch size')
     
     def add_embedding_params(self):
