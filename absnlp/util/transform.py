@@ -23,7 +23,7 @@ def text_transform(opt):
 
 def label_transform(opt):
     tag_id_transform = lambda tags: [opt.tag2id[tag] for tag in tags]
-    tag_tensor_transform = lambda tokens: torch.cat((torch.tensor([0]),torch.tensor(tokens,dtype=torch.float32), torch.tensor([0])))
+    tag_tensor_transform = lambda tokens: torch.cat((torch.tensor([0]),torch.tensor(tokens), torch.tensor([0])))
     return sequential_transforms(tag_id_transform, tag_tensor_transform)
 
 def collate_fn(batch, opt):

@@ -17,12 +17,12 @@ def train():
         for batch, (sents, target_tags) in enumerate(train_loader):
             sents = sents.to(device)
             target_tags = target_tags.to(device)
-
             logits = model(sents)
-            loss = loss_fn(logits.float(), target_tags)
-            print('[epoch: {} batch: {} loss: {}'.format(epoch, batch, loss))
-            # if batch > 0:
-            #     return
+            predicted = logits.permute(0,2,1)
+            loss = loss_fn(predicted, target_tags)
+            print('[epoch: {} batch: {} loss: {}'.format(epoch, batch, loss.item()))
+            if batch > 0:
+                return
 if __name__ == '__main__':
 
     opt = ParserInit().opt
@@ -33,7 +33,5 @@ if __name__ == '__main__':
     opt.vocab_size = len(opt.vocab)
     model = SimpleRnnNet(opt).to(device)
     loss_fn = torch.nn.CrossEntropyLoss()
-    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
-    # loss_fn = torch.nn.NLLLoss(ignore_index=PAD_IDX)
     train()
     

@@ -16,5 +16,6 @@ class SimpleRnnNet(nn.Module):
         embedded = self.embedding(tokens)
         out, _ = self.lstm(embedded)
         out = self.fc(out)
-        out = torch.argmax(out, dim=2)
+        # out = torch.argmax(out, dim=2)
+        out = torch.log_softmax(out, dim=2)
         return out
