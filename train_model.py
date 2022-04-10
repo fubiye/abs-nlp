@@ -3,7 +3,7 @@ from absnlp.util.data_loader import get_loaders
 from absnlp.vocab.pretrain_static import PAD_IDX, get_vocab
 from absnlp.dataset.conll import preprocess_tags
 from absnlp.model.rnn import SimpleRnnNet
-
+import absnlp.util.figure as figure
 import logging
 import torch
 
@@ -33,15 +33,19 @@ def train():
             optimizer.step()
             if (batch + 1) % 10 == 0:
                 cur_loss = total_loss
-                loss_history.append(cur_loss / (batch+1))
+                loss_history.append(cur_loss)
                 # f1_history.append(f1 / (idx+1))
                 total_loss = 0
                 
                 num_ele = batch * batch_size
-                print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss / num_ele), 'f1 placeholder'))
+                print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), 'f1 placeholder'))
+                iters = [i for i in range(len(loss_history))]
+                figure.draw(iters, loss_history)
 if __name__ == '__main__':
 
     opt = ParserInit().opt
+    figure.init_plt()
+
     opt.vocab, opt.vectors = get_vocab(opt)
     opt.tag2id, opt.id2tag = preprocess_tags()
     train_loader = get_loaders(opt)
