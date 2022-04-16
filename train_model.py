@@ -7,7 +7,7 @@ import absnlp.util.figure as figure
 import logging
 import torch
 import torchmetrics
-
+import numpy as np
 
 logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO)
@@ -17,10 +17,13 @@ def train():
     model.train()
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     loss_history = []
+    f1_history = []
 
     for epoch in range(opt.epoches):
+        model.train()
         logger.info("start epoch: %d", epoch)
         total_loss = 0.
+        train_loss = []
         for batch, (sents, target_tags) in enumerate(train_loader):
             batch_size = sents.shape[0]
             sents = sents.to(device)
@@ -29,31 +32,58 @@ def train():
             predicted = logits.permute(0,2,1)
             loss = loss_fn(predicted, target_tags)
             total_loss += loss.item()
+            train_loss.append(loss.item())
             acc = acc_metric(predicted, target_tags)
             f1_score = f1_metric(predicted,target_tags)
-            print('[epoch: {} batch: {} loss: {} acc: {} f1:{} '.format(epoch, batch, loss.item(), acc, f1_score))
             loss.backward()
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
             optimizer.step()
+
             if (batch + 1) % 10 == 0:
                 cur_loss = total_loss
+                f1 = f1_metric.compute()
                 loss_history.append(cur_loss)
-                # f1_history.append(f1 / (idx+1))
+                f1_history.append(f1)
                 total_loss = 0
-                
                 num_ele = batch * batch_size
-                print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), 'f1 placeholder'))
+                print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), f1))
                 iters = [i for i in range(len(loss_history))]
-                figure.draw(iters, loss_history)
+                figure.draw(iters, loss_history, f1_history)
+        avg_loss =  np.average(train_loss)
         acc = acc_metric.compute()
         f1 = f1_metric.compute()
-        print(f"Accuracy on all data: {acc}\n F1 score: {f1}")
+        print("*"*10 + f": train result with epoch: {epoch}")
+        print(f"loss: {avg_loss}")
+        print(f"Accuracy:{acc}")
+        print(f"F1 Score: {f1}")
         acc_metric.reset()
         f1_metric.reset()
-
+        print("*"*10)
+        eval()
 def eval():
+    print("start eval on test set")
     model.eval()
-    
+    eval_loss = []
+    for batch, (sents, target_tags) in enumerate(test_loader):
+        batch_size = sents.shape[0]
+        sents = sents.to(device)
+        target_tags = target_tags.to(device)
+        logits = model(sents)
+        predicted = logits.permute(0,2,1)
+        loss = loss_fn(predicted, target_tags)
+        eval_loss.append(loss.item())
+        acc = acc_metric(predicted, target_tags)
+        f1_score = f1_metric(predicted,target_tags)
+
+    avg_loss =  np.average(eval_loss)
+    acc = acc_metric.compute()
+    f1 = f1_metric.compute()
+    print("*"*10 + ": eval result")
+    print(f"loss: {avg_loss}")
+    print(f"Accuracy:{acc}")
+    print(f"F1 Score: {f1}")
+    acc_metric.reset()
+    f1_metric.reset()
+    print("*"*10)
 if __name__ == '__main__':
 
     opt = ParserInit().opt
