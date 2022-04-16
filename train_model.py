@@ -36,6 +36,8 @@ def train():
             loss = loss_fn(predicted, target_tags)
             total_loss += loss.item()
             train_loss.append(loss.item())
+            
+            # print(f'target: {target_tags.device}') print(f'predicted: {predicted.device}')
             acc = acc_metric(predicted, target_tags)
             f1_score = f1_metric(predicted,target_tags)
             loss.backward()
@@ -99,16 +101,15 @@ def eval():
     f1_metric.reset()
     return acc, f1
 if __name__ == '__main__':
-
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     opt = ParserInit().opt
     # figure.init_plt()
-    acc_metric = torchmetrics.Accuracy(ignore_index=0)
-    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise',ignore_index=0)
+    acc_metric = torchmetrics.Accuracy(ignore_index=0).to(device)
+    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise',ignore_index=0).to(device)
     
     opt.vocab, opt.vectors = get_vocab(opt)
     opt.tag2id, opt.id2tag = preprocess_tags()
     train_loader, test_loader = get_loaders(opt)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     opt.vocab_size = len(opt.vocab)
     model = SimpleRnnNet(opt).to(device)
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)
