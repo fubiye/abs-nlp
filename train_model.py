@@ -9,6 +9,7 @@ import torch
 import torchmetrics
 import numpy as np
 import os 
+from tqdm import tqdm
 
 logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO)
@@ -25,7 +26,8 @@ def train():
         logger.info("start epoch: %d", epoch)
         total_loss = 0.
         train_loss = []
-        for batch, (sents, target_tags) in enumerate(train_loader):
+        t = tqdm(train_loader)
+        for batch, (sents, target_tags) in enumerate(t):
             batch_size = sents.shape[0]
             sents = sents.to(device)
             target_tags = target_tags.to(device)
@@ -46,7 +48,8 @@ def train():
                 f1_history.append(f1)
                 total_loss = 0
                 num_ele = batch * batch_size
-                print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), f1))
+                t.set_description("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), f1))
+                t.refresh()
                 iters = [i for i in range(len(loss_history))]
                 # figure.draw(iters, loss_history, f1_history)
                 # break
@@ -60,15 +63,15 @@ def train():
         acc_metric.reset()
         f1_metric.reset()
         logger.info("*"*10)
-        _, eval_f1 = eval()
-        if eval_f1 > best_metric:
+        eval_acc, eval_f1 = eval()
+        if eval_acc > best_metric:
             model_file = "_".join([opt.dataset, opt.model_name, 'e',str(opt.embedding_dim),'h', str(opt.lstm_hidden_dim)]) + '.pth'
             logger.info("save checkpoint: %s f1 score: %s", model_file, eval_f1)
             model_file = os.path.join(opt.ckpt_dir, model_file)
             if not os.path.exists(opt.ckpt_dir):
                 os.makedirs(opt.ckpt_dir)
             torch.save({'state_dict': model.state_dict()},model_file)
-            best_metric = eval_f1
+            best_metric = eval_acc
             logger.info("Best checkpoint saved")
 def eval():
     logger.info("start eval on test set")
