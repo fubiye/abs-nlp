@@ -8,6 +8,7 @@ import logging
 import torch
 import torchmetrics
 import numpy as np
+import os 
 
 logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO)
@@ -18,7 +19,7 @@ def train():
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
     loss_history = []
     f1_history = []
-
+    best_metric = 0
     for epoch in range(opt.epoches):
         model.train()
         logger.info("start epoch: %d", epoch)
@@ -47,20 +48,30 @@ def train():
                 num_ele = batch * batch_size
                 print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), f1))
                 iters = [i for i in range(len(loss_history))]
-                figure.draw(iters, loss_history, f1_history)
+                # figure.draw(iters, loss_history, f1_history)
+                # break
         avg_loss =  np.average(train_loss)
         acc = acc_metric.compute()
         f1 = f1_metric.compute()
-        print("*"*10 + f": train result with epoch: {epoch}")
-        print(f"loss: {avg_loss}")
-        print(f"Accuracy:{acc}")
-        print(f"F1 Score: {f1}")
+        logger.info("*"*10 + f": train result with epoch: {epoch}")
+        logger.info(f"loss: {avg_loss}")
+        logger.info(f"Accuracy:{acc}")
+        logger.info(f"F1 Score: {f1}")
         acc_metric.reset()
         f1_metric.reset()
-        print("*"*10)
-        eval()
+        logger.info("*"*10)
+        _, eval_f1 = eval()
+        if eval_f1 > best_metric:
+            model_file = "_".join([opt.dataset, opt.model_name, 'e',str(opt.embedding_dim),'h', str(opt.lstm_hidden_dim)]) + '.pth'
+            logger.info("save checkpoint: %s f1 score: %s", model_file, eval_f1)
+            model_file = os.path.join(opt.ckpt_dir, model_file)
+            if not os.path.exists(opt.ckpt_dir):
+                os.makedirs(opt.ckpt_dir)
+            torch.save({'state_dict': model.state_dict()},model_file)
+            best_metric = eval_f1
+            logger.info("Best checkpoint saved")
 def eval():
-    print("start eval on test set")
+    logger.info("start eval on test set")
     model.eval()
     eval_loss = []
     for batch, (sents, target_tags) in enumerate(test_loader):
@@ -77,19 +88,20 @@ def eval():
     avg_loss =  np.average(eval_loss)
     acc = acc_metric.compute()
     f1 = f1_metric.compute()
-    print("*"*10 + ": eval result")
-    print(f"loss: {avg_loss}")
-    print(f"Accuracy:{acc}")
-    print(f"F1 Score: {f1}")
+    logger.info("*"*10 + ": eval result")
+    logger.info(f"loss: {avg_loss}")
+    logger.info(f"Accuracy:{acc}")
+    logger.info(f"F1 Score: {f1}")
     acc_metric.reset()
     f1_metric.reset()
-    print("*"*10)
+    return acc, f1
 if __name__ == '__main__':
 
     opt = ParserInit().opt
-    figure.init_plt()
+    # figure.init_plt()
     acc_metric = torchmetrics.Accuracy()
     f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise')
+    
     opt.vocab, opt.vectors = get_vocab(opt)
     opt.tag2id, opt.id2tag = preprocess_tags()
     train_loader, test_loader = get_loaders(opt)

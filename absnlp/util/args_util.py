@@ -16,6 +16,7 @@ class ParserInit():
         self.add_training_params()
         self.add_embedding_params()
         self.add_hyper_parameters()
+        self.add_model_parameters()
 
     def add_data_params(self):
         home = os.path.expanduser('~')
@@ -40,6 +41,11 @@ class ParserInit():
         # Model Hyper Parameters
         # LSTM 
         self.parser.add_argument('--lstm_hidden_dim', default=100, type=int, help='hidden dim for lstm')
+
+    def add_model_parameters(self):
+        self.parser.add_argument('--ckpt_dir',default='checkpoints')
+        self.parser.add_argument('--model_name', default='rnn')
+
 
 
 

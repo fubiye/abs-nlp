@@ -19,5 +19,5 @@ def get_loaders(opt):
     logger.info('loading data...')
     conll.detect_data_path(opt)
     train_loader = get_loader(opt, opt.train)
-    test_loader = get_loader(opt, opt.test)
+    test_loader = get_loader(opt, opt.valid)
     return train_loader, test_loader
