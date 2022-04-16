@@ -3,12 +3,12 @@ from turtle import forward
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from absnlp.vocab.pretrain_static import PAD_IDX
 class SimpleRnnNet(nn.Module):
 
     def __init__(self, opt) -> None:
         super(SimpleRnnNet, self).__init__()
-        self.embedding = nn.Embedding(opt.vocab_size, opt.embedding_dim)
+        self.embedding = nn.Embedding(opt.vocab_size, opt.embedding_dim,padding_idx=PAD_IDX)
         self.lstm = nn.LSTM(opt.embedding_dim, opt.lstm_hidden_dim, batch_first=True)
         self.fc = nn.Linear(opt.lstm_hidden_dim, opt.num_of_tags)
 
