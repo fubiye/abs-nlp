@@ -14,7 +14,7 @@ def detect_data_path(opt):
         raise Exception("data not found")
 def preprocess_tags():
     raw_tags = ['PER','LOC','ORG','MISC']
-    _tags = ['O'] 
+    _tags = ['<pad>','O']
     for tag in raw_tags:
         _tags += ['B-'+tag, 'I-'+tag]
     tags = _tags

@@ -99,8 +99,8 @@ if __name__ == '__main__':
 
     opt = ParserInit().opt
     # figure.init_plt()
-    acc_metric = torchmetrics.Accuracy()
-    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise')
+    acc_metric = torchmetrics.Accuracy(ignore_index=0)
+    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise',ignore_index=0)
     
     opt.vocab, opt.vectors = get_vocab(opt)
     opt.tag2id, opt.id2tag = preprocess_tags()
@@ -108,6 +108,6 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     opt.vocab_size = len(opt.vocab)
     model = SimpleRnnNet(opt).to(device)
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.CrossEntropyLoss(ignore_index=0)
     train()
     

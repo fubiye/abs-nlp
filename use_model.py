@@ -1,6 +1,6 @@
 from absnlp.util.args_util import ParserInit
 from absnlp.util.data_loader import get_loaders
-from absnlp.vocab.pretrain_static import PAD_IDX, get_vocab
+from absnlp.vocab.pretrain_static import PAD_IDX, BOS_IDX, EOS_IDX, get_vocab
 from absnlp.dataset.conll import preprocess_tags
 from absnlp.model.rnn import SimpleRnnNet
 import absnlp.util.figure as figure
@@ -31,7 +31,7 @@ if __name__ == '__main__':
         "West Indian all-rounder Phil Simmons took four for 38 on Friday as Leicestershire beat Somerset by an innings and 39 runs in two days to take over at the head of the county championship .",
         "Germany 's representative to the European Union 's veterinary committee Werner Zwingmann said on Wednesday consumers should buy sheepmeat from countries other than Britain until the scientific advice was clearer ."
         ]
-    ids = [opt.vocab(sent.split()) for sent in sents]
+    ids = [[BOS_IDX]+opt.vocab(sent.split())+[EOS_IDX] for sent in sents]
     max_len = np.max([len(tokens) for tokens in ids])
     padded_ids = []
     for tokens in ids:
