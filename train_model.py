@@ -6,6 +6,8 @@ from absnlp.model.rnn import SimpleRnnNet
 import absnlp.util.figure as figure
 import logging
 import torch
+import torchmetrics
+
 
 logging.basicConfig(format="%(asctime)s %(levelname)s %(name)s %(message)s",
                         datefmt="%Y-%m-%d %H:%M:%S", level=logging.INFO)
@@ -27,7 +29,9 @@ def train():
             predicted = logits.permute(0,2,1)
             loss = loss_fn(predicted, target_tags)
             total_loss += loss.item()
-            # print('[epoch: {} batch: {} loss: {}'.format(epoch, batch, loss.item()))
+            acc = acc_metric(predicted, target_tags)
+            f1_score = f1_metric(predicted,target_tags)
+            print('[epoch: {} batch: {} loss: {} acc: {} f1:{} '.format(epoch, batch, loss.item(), acc, f1_score))
             loss.backward()
             # torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
             optimizer.step()
@@ -41,14 +45,24 @@ def train():
                 print("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), 'f1 placeholder'))
                 iters = [i for i in range(len(loss_history))]
                 figure.draw(iters, loss_history)
+        acc = acc_metric.compute()
+        f1 = f1_metric.compute()
+        print(f"Accuracy on all data: {acc}\n F1 score: {f1}")
+        acc_metric.reset()
+        f1_metric.reset()
+
+def eval():
+    model.eval()
+    
 if __name__ == '__main__':
 
     opt = ParserInit().opt
     figure.init_plt()
-
+    acc_metric = torchmetrics.Accuracy()
+    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise')
     opt.vocab, opt.vectors = get_vocab(opt)
     opt.tag2id, opt.id2tag = preprocess_tags()
-    train_loader = get_loaders(opt)
+    train_loader, test_loader = get_loaders(opt)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     opt.vocab_size = len(opt.vocab)
     model = SimpleRnnNet(opt).to(device)

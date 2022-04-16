@@ -29,7 +29,7 @@ class ParserInit():
         
     def add_training_params(self):
         self.parser.add_argument('--epoches',default=10,type=int)
-        self.parser.add_argument('--batch_size', default=32, type=int, help='batch size')
+        self.parser.add_argument('--batch_size', default=100, type=int, help='batch size')
     
     def add_embedding_params(self):
         self.parser.add_argument('--pretrain',default='glove',type=str, help="(glove|....)")
