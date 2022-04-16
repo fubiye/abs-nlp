@@ -26,7 +26,7 @@ class ParserInit():
         glove_cache_path = os.path.join(cache_path,'glove')
         self.parser.add_argument('--glove_cache',default=glove_cache_path,type=str, help="cache dir for glove")
         self.parser.add_argument('--dataset', default='conll2003', type=str, help="which dataset to load")
-        self.parser.add_argument('--num_of_tags', default=10, help='total count of tags')
+        self.parser.add_argument('--num_of_tags', default=9, help='total count of tags')
         
     def add_training_params(self):
         self.parser.add_argument('--epoches',default=10,type=int)
