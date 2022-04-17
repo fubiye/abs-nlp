@@ -1,1 +1,31 @@
 seed: 666
+model_name: bilstm
+
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 1e-3
+
+early_stopping:
+  _target_: pytorch_lightning.callbacks.EarlyStopping
+  monitor: val_f1
+  mode: max
+  patience: 50
+model_checkpoint:
+  _target_: pytorch_lightning.callbacks.ModelCheckpoint
+  monitor: val_f1
+  mode: max
+  verbose: True
+  save_top_k: 5
+  dirpath: experiments/${train.model_name}
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  gpus: 1
+  accumulate_grad_batches: 4
+  gradient_clip_val: 10.0
+  max_epochs: 5
+  val_check_interval: 1.0 # you can specify an int "n" here => validation every "n" steps
+  #max_steps: 100_000
+  # uncomment the lines below for training with mixed precision
+  # precision: 16
+  # amp_level: O2

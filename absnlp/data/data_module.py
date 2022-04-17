@@ -48,3 +48,6 @@ class DataModule(pl.LightningDataModule):
             batch_size = self.config.data.batch_size,
             shuffle=False
         )
+
+    def get_vocab_sizes(self):
+        return self.manager.train_dataset.get_vocab_sizes()

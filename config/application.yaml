@@ -1,3 +1,4 @@
 defaults:
   - train: bilstm
   - data: conll2003
+  - model: lstm
