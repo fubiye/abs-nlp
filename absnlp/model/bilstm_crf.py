@@ -36,7 +36,7 @@ class BiLstmCrf(pl.LightningModule):
         for result in results:
             result_tensor.append(torch.tensor(result))
         foward_out = torch.stack(result_tensor)
-        return -loss, foward_out
+        return -loss, foward_out.to(labels.device)
 
     def _get_lstm_features(self, sample):
         emb = self.word_embeddings(sample)
