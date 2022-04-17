@@ -1,4 +1,4 @@
 defaults:
-  - train: bilstm
+  - train: bi-lstm-crf
   - data: conll2003
-  - model: lstm
+  - model: bi-lstm-crf

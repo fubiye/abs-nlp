@@ -6,6 +6,7 @@ from omegaconf import DictConfig
 from hydra.utils import instantiate 
 from absnlp.data.data_module import DataModule
 from absnlp.model.base import BaseNerModule
+from absnlp.model.bilstm_crf import BiLstmCrf
 from absnlp.train.manager import TrainManager
 
 @hydra.main(config_path="config",config_name="application")
@@ -13,7 +14,7 @@ def train(config: DictConfig) -> None:
     pl.seed_everything(config.train.seed)
     data_module = DataModule(config)
     vocab_sizes = data_module.get_vocab_sizes()
-    ner = BaseNerModule(config, vocab_sizes)
+    ner = BiLstmCrf(config, vocab_sizes)
     train_manager = TrainManager(config)
     gpus = config.train.trainer.gpus if torch.cuda.is_available() else 0
     trainer: Trainer = instantiate(

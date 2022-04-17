@@ -1,107 +1,93 @@
+import hydra
+import pytorch_lightning as pl
 import torch
-import torch.nn as nn
-from absnlp.vocab.constants import START_TAG, STOP_TAG
-from absnlp.utils.helper import log_sum_exp, argmax, prepare_sequence
+from hydra.utils import instantiate
+from torchmetrics.functional import f1_score
+from torch import nn
+from torchcrf import CRF
 
-class BiLSTM_CRF(nn.Module):
-    def __init__(self, vocab_size, tag_to_ix, embedding_dim, hidden_dim):
-        super(BiLSTM_CRF, self).__init__()
-        self.embedding_dim = embedding_dim
-        self.hidden_dim = hidden_dim
-        self.vocab_size = vocab_size
-        self.tag_to_ix = tag_to_ix
-        self.tagset_size = len(tag_to_ix)
+class BiLstmCrf(pl.LightningModule):
 
-        self.word_embeds = nn.Embedding(vocab_size, embedding_dim)
-        self.lstm = nn.LSTM(embedding_dim, hidden_dim // 2, num_layers=1, bidirectional=True)
+    def __init__(self, conf, vocab_sizes, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.save_hyperparameters({"conf": conf, "vocab_sizes": vocab_sizes})
+        self.conf = conf
+        self.encoder_conf = self.conf.model.encoder
+        self.num_labels = vocab_sizes["ner_labels"]
+        self.word_embeddings = nn.Embedding(
+            vocab_sizes["words"], self.encoder_conf.input_size, padding_idx=0
+        )
+        self.encoder = instantiate(self.encoder_conf)
+        hidden_size = self.encoder_conf.hidden_size
+        bi_direction = self.encoder_conf.bidirectional
+        linear_input_size = (hidden_size * 2 if bi_direction else hidden_size)
+        self.dropout = nn.Dropout(self.encoder_conf.dropout)
+        self.linear = nn.Linear(linear_input_size, self.num_labels)
+        self.crf = CRF(num_tags=self.num_labels, batch_first=True)
+        # self.loss = nn.CrossEntropyLoss(ignore_index=0)
+        # self.softmax = nn.Softmax(dim=-1)
+    
+    def forward_train(self, sentences, labels):
+        feats = self._get_lstm_features(sentences)
+        mask = labels != 0
+        loss = self.crf(feats, labels, mask=mask, reduction='mean')
+        results = self.crf.decode(feats)
+        result_tensor = []
+        for result in results:
+            result_tensor.append(torch.tensor(result))
+        foward_out = torch.stack(result_tensor)
+        return -loss, foward_out
 
-        self.hidden2tag = nn.Linear(hidden_dim, self.tagset_size)
+    def _get_lstm_features(self, sample):
+        emb = self.word_embeddings(sample)
+        emb = self.dropout(emb)
+        out_lstm, _ = self.encoder(emb)
+        out =  self.linear(out_lstm)
+        return out
+    
+    def _decode(self, sentences):
+        feats = self._get_lstm_features(sentences)
+        results = self.crf.decode(feats)
+        result_tensor = []
+        for result in results:
+            result_tensor.append(torch.tensor(result))
+        return torch.stack(result_tensor)
+    
+    def forward(self, sample):
+        return self._decode(sample)
 
-        self.transitions = nn.Parameter(torch.randn(self.tagset_size, self.tagset_size))
+    def training_step(self, batch: dict, batch_idx: int) -> torch.Tensor:
+        loss, f1 = self._shared_step(batch, batch_idx)
+        self.log("train_loss", loss)
+        self.log("train_f1", f1)
+        return loss
 
-        self.transitions.data[tag_to_ix[START_TAG], :] = -10000
-        self.transitions.data[tag_to_ix[STOP_TAG]] = -10000
+    def validation_step(self, batch: dict, batch_idx: int):
+        loss, f1 = self._shared_step(batch, batch_idx)
+        self.log("val_loss", loss)
+        self.log("val_f1", f1)
+        return loss
 
-    def init_hidden(self):
-        return (torch.randn(2, 1, self.hidden_dim // 2),
-                torch.randn(2, 1 , self.hidden_dim // 2))
+    def test_step(self, batch: dict, batch_idx: int):
+        _, f1 = self._shared_step(batch, batch_idx)
+        self.log("test_f1", f1)
 
-    def _forward_alg(self, feats):
-        init_alphas = torch.full((1, self.tagset_size), -10000)
-        init_alphas[0][self.tag_to_ix[START_TAG]] = 0
+    def _shared_step(self, batch: dict, batch_idx: int):
+        words = batch["words"]
+        label = batch["labels"]
+        loss, forward_output = self.forward_train(words, label)
+        f1 = self._evaluate(forward_output, label)
+        return loss, f1
 
-        forward_var = init_alphas
+    def _evaluate(self, forward_output, labels):
+        # pred = self.softmax(logits)
+        # pred = torch.argmax(logits, dim=-1)
+        mask = labels != 0
+        pred_no_pad, labels_no_pad = forward_output[mask], labels[mask]
+        f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=self.num_labels, average="macro")
+        # loss = self.loss(logits.view(-1, logits.shape[-1]), labels.view(-1))
+        return f1
 
-        for feat in feats:
-            alpha_t = []
-            for next_tag in range(self.tagset_size):
-                emit_score = feat[next_tag].view(1, -1).expand(1, self.tagset_size)
-                trans_score = self.transitions[next_tag].view(1, -1)
-                next_tag_var = forward_var + trans_score + emit_score
-                alpha_t.append(log_sum_exp(next_tag_var).view(1))
-            forward_var = torch.cat(alpha_t).view(1, -1)
-
-        terminal_var = forward_var + self.transitions[self.tag_to_ix[STOP_TAG]]
-        alpha = log_sum_exp(terminal_var)
-        return alpha
-    def _get_lstm_features(self, sentence):
-        self.hidden = self.init_hidden()
-        embeds = self.word_embeds(sentence).view(len(sentence), 1, -1)
-        lstm_out, self.hidden = self.lstm(embeds, self.hidden)
-        lstm_out = lstm_out.view(len(sentence), self.hidden_dim)
-        lstm_feats = self.hidden2tag(lstm_out)
-        return lstm_feats
-
-    def _score_sentence(self, feats, tags):
-        score = torch.zeros(1)
-        tags = torch.cat([torch.tensor([self.tag_to_ix[START_TAG]],dtype=torch.long), tags])
-        for i, feat in enumerate(feats):
-            score = score + self.transitions[tags[i + 1], tags[i]] + feat[tags[i + 1]]
-
-        score = score + self.transitions[self.tag_to_ix[STOP_TAG], tags[-1]]
-        return score
-
-    def _viterbi_decode(self, feats):
-        backpointers = []
-
-        init_vvars = torch.full((1, self.tagset_size), -10000.)
-        init_vvars[0][self.tag_to_ix[START_TAG]] = 0
-
-        forward_var = init_vvars
-        for feat in feats:
-            bptrs_t = []
-            viterbivars_t = []
-
-            for next_tag in range(self.tagset_size):
-                next_tag_var = forward_var + self.transitions[next_tag]
-                best_tag_id = argmax(next_tag_var)
-                bptrs_t.append(best_tag_id)
-                viterbivars_t.append(next_tag_var[0][best_tag_id].view(1))
-
-            forward_var = (torch.cat(viterbivars_t) + feat).view(1, -1)
-            backpointers.append(bptrs_t)
-
-        terminal_var = forward_var + self.transitions[self.tag_to_ix[STOP_TAG]]
-        best_tag_id = argmax(terminal_var)
-        path_score = terminal_var[0][best_tag_id]
-
-        best_path = [best_tag_id]
-        for bptrs_t in reversed(backpointers):
-            best_tag_id = bptrs_t[best_tag_id]
-            best_path.append(best_tag_id)
-
-        start = best_path.pop()
-        assert start == self.tag_to_ix[START_TAG]
-        best_path.reverse()
-        return path_score, best_path
-
-    def neg_log_likelihood(self, sentence, tags):
-        feats = self._get_lstm_features(sentence)
-        forward_score = self._forward_alg(feats)
-        gold_score = self._score_sentence(feats, tags)
-        return forward_score - gold_score
-
-    def forward(self, sentence):
-        lstm_feats = self._get_lstm_features(sentence)
-        score, tag_seq = self._viterbi_decode(lstm_feats)
-        return score, tag_seq
+    def configure_optimizers(self):
+        optimizer: torch.optim.Optimizer = instantiate(self.conf.train.optimizer, params=self.parameters())
+        return optimizer
