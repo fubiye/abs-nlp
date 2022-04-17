@@ -1,6 +1,10 @@
 manager:
-  _target_: absnlp.data.conll.CoNLLDataManager
+  _target_: absnlp.data.conll.manager.CoNLLDataManager
   cache_dir: ~/.cache/conll2003
   train_path: train.txt
   val_path: valid.txt
   test_path: test.txt
+  vocab_path: vocab.pth
+  padding_size: 200
+batch_size: 32
+num_workers: 1

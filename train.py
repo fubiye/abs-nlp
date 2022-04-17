@@ -8,5 +8,8 @@ from absnlp.data.data_module import DataModule
 def train(config: DictConfig) -> None:
     pl.seed_everything(config.train.seed)
     data_module = DataModule(config)
+    val_loader = data_module.val_dataloader()
+    for batch, data in enumerate(val_loader):
+        print(batch)
 if __name__ == "__main__":
     train()
