@@ -1,0 +1,3 @@
+defaults:
+  - train: bilstm
+  - data: conll2003

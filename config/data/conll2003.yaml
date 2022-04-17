@@ -1,0 +1,6 @@
+manager:
+  _target_: absnlp.data.conll.CoNLLDataManager
+  cache_dir: ~/.cache/conll2003
+  train_path: train.txt
+  val_path: valid.txt
+  test_path: test.txt
