@@ -38,19 +38,22 @@ def train():
             train_loss.append(loss.item())
             
             # print(f'target: {target_tags.device}') print(f'predicted: {predicted.device}')
-            acc = acc_metric(predicted, target_tags)
-            f1_score = f1_metric(predicted,target_tags)
+            predicted_tags = torch.argmax(predicted,dim=1)
+            acc = acc_metric(predicted_tags, target_tags)
+            f1_score = f1_metric(predicted_tags,target_tags)
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
             optimizer.step()
 
             if (batch + 1) % 10 == 0:
                 cur_loss = total_loss
+                acc = acc_metric.compute()
                 f1 = f1_metric.compute()
                 loss_history.append(cur_loss)
                 f1_history.append(f1)
                 total_loss = 0
                 num_ele = batch * batch_size
-                t.set_description("epochs : {}, batch : {}, loss : {}, f1 : {}".format(epoch+1, batch, (cur_loss), f1))
+                t.set_description(f"epochs : {epoch}, batch : {batch}, loss : {cur_loss:.4f}, f1 : {f1:.4f}, acc: {acc:.4f}")
                 t.refresh()
                 iters = [i for i in range(len(loss_history))]
                 # figure.draw(iters, loss_history, f1_history)
@@ -87,8 +90,9 @@ def eval():
         predicted = logits.permute(0,2,1)
         loss = loss_fn(predicted, target_tags)
         eval_loss.append(loss.item())
-        acc = acc_metric(predicted, target_tags)
-        f1_score = f1_metric(predicted,target_tags)
+        predicted_tags = torch.argmax(predicted,dim=1)
+        acc = acc_metric(predicted_tags, target_tags)
+        f1_score = f1_metric(predicted_tags,target_tags)
 
     avg_loss =  np.average(eval_loss)
     acc = acc_metric.compute()
@@ -105,7 +109,7 @@ if __name__ == '__main__':
     opt = ParserInit().opt
     # figure.init_plt()
     acc_metric = torchmetrics.Accuracy(ignore_index=0).to(device)
-    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags, multiclass=True, mdmc_average='samplewise',ignore_index=0).to(device)
+    f1_metric = torchmetrics.F1Score(num_classes=opt.num_of_tags,threshold=0, multiclass=True,average='macro', mdmc_average='global',ignore_index=0).to(device)
     
     opt.vocab, opt.vectors = get_vocab(opt)
     opt.tag2id, opt.id2tag = preprocess_tags()

@@ -35,7 +35,7 @@ class ParserInit():
     def add_embedding_params(self):
         self.parser.add_argument('--pretrain',default='glove',type=str, help="(glove|....)")
         self.parser.add_argument('--vector_name', default='6B', type=str)
-        self.parser.add_argument('--embedding_dim',default=50, type=int, help="embedding size")
+        self.parser.add_argument('--embedding_dim',default=100, type=int, help="embedding size")
         
     def add_hyper_parameters(self):
         # Model Hyper Parameters
