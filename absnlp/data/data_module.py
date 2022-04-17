@@ -28,7 +28,7 @@ class DataModule(pl.LightningDataModule):
         self.manager.setup()
     def train_dataloader(self):
         return DataLoader(
-            self.manager,get_train_dataset(),
+            self.manager.train_dataset,
             num_workers=self.config.data.num_workers,
             batch_size = self.config.data.batch_size,
             shuffle=True
@@ -36,14 +36,14 @@ class DataModule(pl.LightningDataModule):
     
     def val_dataloader(self):
         return DataLoader(
-            self.manager.get_val_dataset(),
+            self.manager.val_dataset,
             num_workers=self.config.data.num_workers,
             batch_size = self.config.data.batch_size,
             shuffle=False
         )
     def test_dataloader(self):
         return DataLoader(
-            self.manager.get_test_dataset(),
+            self.manager.test_dataset,
             num_workers=self.config.data.num_workers,
             batch_size = self.config.data.batch_size,
             shuffle=False

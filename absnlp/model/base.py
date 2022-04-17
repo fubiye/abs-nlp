@@ -25,7 +25,7 @@ class BaseNerModule(pl.LightningModule):
         self.loss = nn.CrossEntropyLoss(ignore_index=0)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, example):
+    def forward(self, sample):
         emb = self.word_embeddings(sample)
         emb = self.dropout(emb)
         out_lstm, _ = self.encoder(emb)
