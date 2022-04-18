@@ -1,4 +1,4 @@
 defaults:
-  - train: bi-lstm-crf
-  - data: conll2003
-  - model: bi-lstm-crf
+  - train: bert
+  - data: conll4bert
+  - model: bert
