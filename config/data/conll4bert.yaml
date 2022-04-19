@@ -5,7 +5,7 @@ manager:
   val_path: valid.txt
   test_path: test.txt
   vocab_path: vocab.pth
-  padding_size: 200
+  padding_size: 512
   bert: True
 batch_size: 32
 num_workers: 1

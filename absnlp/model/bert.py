@@ -21,7 +21,7 @@ class BertNerModule(pl.LightningModule):
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, sample):
-        outputs = self.bert(**sample)
+        outputs = self.bert(sample)
         sequence_output = outputs[0]
         sequence_output = self.dropout(sequence_output)
         return self.linear(sequence_output)
@@ -52,7 +52,7 @@ class BertNerModule(pl.LightningModule):
     def _evaluate(self, logits, labels):
         pred = self.softmax(logits)
         pred = torch.argmax(pred, dim=-1)
-        mask = labels != 0
+        mask = (labels != 0) & (labels != -100)
         pred_no_pad, labels_no_pad = pred[mask], labels[mask]
         f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=self.num_labels, average="macro")
         loss = self.loss(logits.view(-1, logits.shape[-1]), labels.view(-1))

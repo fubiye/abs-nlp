@@ -28,7 +28,13 @@ class CoNLLDataset4Bert(Dataset):
             sentence = self.words[id_sentence]
             tokenized_inputs  = self.tokenizer(sentence, is_split_into_words=True)
             encoded_ner_labels = self.encode_tokens(self.ner_labels[id_sentence], self.vocab_label_ner)
-            result.append(tokenized_inputs)
+            self.assign_token_tags(tokenized_inputs, encoded_ner_labels)
+            sample = {
+                "id_sentence": id_sentence,
+                "input_ids": tokenized_inputs['input_ids'],
+                "labels": tokenized_inputs['labels'],
+            }
+            result.append(sample)
         return result
 
     def assign_token_tags(self, tokenized_inputs, word_labels):
@@ -43,8 +49,14 @@ class CoNLLDataset4Bert(Dataset):
             else:
                 label_ids.append(-100)
             previous_word_idx = word_idx
-        tokenized_inputs['labels'] = label_ids
-
+        input_ids = tokenized_inputs['input_ids']
+        input_ids_len = len(input_ids)
+        if input_ids_len < self.padding_size:
+            padding: List[int] = [0] * (self.padding_size - input_ids_len)
+            input_ids.extend(padding)
+            label_ids.extend(padding)
+        tokenized_inputs['labels'] = torch.LongTensor(label_ids)
+        
     def __getitem__(self, index) -> T_co:
         return self.dataset[index]
 
@@ -71,10 +83,10 @@ class CoNLLDataset4Bert(Dataset):
 
     def encode_tokens(self, sentence: List[str], vocab: Vocab) -> torch.LongTensor:
         result: List[int] = [vocab.token_to_id(token) if token in vocab else vocab.unk_id for token in sentence]
-        len_sentence = len(sentence)
-        if len_sentence < self.padding_size:
-            padding: List[int] = [vocab.pad_id] * (self.padding_size - len_sentence)
-            result.extend(padding)
+        # len_sentence = len(sentence)
+        # if len_sentence < self.padding_size:
+        #     padding: List[int] = [vocab.pad_id] * (self.padding_size - len_sentence)
+        #     result.extend(padding)
         return torch.LongTensor(result)
 
     def parse_dataset(self, dataset_path: str) -> None:
