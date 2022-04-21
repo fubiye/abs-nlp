@@ -23,24 +23,26 @@ class CoNLLDataset4Bert(Dataset):
         return {"words": vocab_words_size, "ner_labels": vocab_ner_labels_size}
 
     def build_dataset(self) -> List[dict]:
+        tokenized_inputs = self.tokenizer(self.words, padding=True, truncation=True, is_split_into_words=True, return_tensors='pt')
         result = []
-        for id_sentence in range(self.len_dataset):
-            sentence = self.words[id_sentence]
-            tokenized_inputs  = self.tokenizer(sentence, is_split_into_words=True)
-            encoded_ner_labels = self.encode_tokens(self.ner_labels[id_sentence], self.vocab_label_ner)
-            self.assign_token_tags(tokenized_inputs, encoded_ner_labels)
-            sample = {
-                "id_sentence": id_sentence,
-                "input_ids": tokenized_inputs['input_ids'],
-                "labels": tokenized_inputs['labels'],
-            }
-            result.append(sample)
+        for idx, (input_ids,token_type_ids,attention_mask) in enumerate(zip(tokenized_inputs['input_ids'],tokenized_inputs['token_type_ids'],tokenized_inputs['attention_mask'])):
+            tags = self.ner_labels[idx]
+            tag_ids = self.encode_tokens(tags, self.vocab_label_ner)
+            word_ids = tokenized_inputs.word_ids(batch_index=idx)
+            token_tag_ids = self.assign_token_tags(word_ids, tag_ids)
+            
+            result.append({
+                'sample_id': idx,
+                'input_ids': input_ids,
+                'token_type_ids': token_type_ids,
+                'attention_mask': attention_mask,
+                'tag_ids': torch.LongTensor(token_tag_ids)
+            })
         return result
 
-    def assign_token_tags(self, tokenized_inputs, word_labels):
+    def assign_token_tags(self, word_ids, word_labels):
         previous_word_idx = None
         label_ids = []
-        word_ids = tokenized_inputs.word_ids()
         for word_idx in word_ids:  # Set the special tokens to -100.
             if word_idx is None:
                 label_ids.append(-100)
@@ -49,13 +51,7 @@ class CoNLLDataset4Bert(Dataset):
             else:
                 label_ids.append(-100)
             previous_word_idx = word_idx
-        input_ids = tokenized_inputs['input_ids']
-        input_ids_len = len(input_ids)
-        if input_ids_len < self.padding_size:
-            padding: List[int] = [0] * (self.padding_size - input_ids_len)
-            input_ids.extend(padding)
-            label_ids.extend(padding)
-        tokenized_inputs['labels'] = torch.LongTensor(label_ids)
+        return torch.LongTensor(label_ids)
         
     def __getitem__(self, index) -> T_co:
         return self.dataset[index]

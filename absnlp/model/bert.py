@@ -20,8 +20,8 @@ class BertNerModule(pl.LightningModule):
         self.loss = nn.CrossEntropyLoss(ignore_index=0)
         self.softmax = nn.Softmax(dim=-1)
 
-    def forward(self, sample):
-        outputs = self.bert(sample)
+    def forward(self, batch):
+        outputs = self.bert(input_ids=batch['input_ids'], token_type_ids=batch['token_type_ids'],attention_mask=batch['attention_mask'])
         sequence_output = outputs[0]
         sequence_output = self.dropout(sequence_output)
         return self.linear(sequence_output)
@@ -43,19 +43,18 @@ class BertNerModule(pl.LightningModule):
         self.log("test_f1", f1)
 
     def _shared_step(self, batch: dict, batch_idx: int):
-        words = batch["input_ids"]
-        label = batch["labels"]
-        forward_output = self.forward(words)
-        loss, f1 = self._evaluate(forward_output, label)
+        tag_ids = batch["tag_ids"]
+        forward_output = self.forward(batch)
+        loss, f1 = self._evaluate(forward_output, tag_ids)
         return loss, f1
 
     def _evaluate(self, logits, labels):
         pred = self.softmax(logits)
         pred = torch.argmax(pred, dim=-1)
         mask = (labels != 0) & (labels != -100)
-        pred_no_pad, labels_no_pad = pred[mask], labels[mask]
+        pred_no_pad, labels_no_pad, logits_no_pad = pred[mask], labels[mask], logits[mask]
         f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=self.num_labels, average="macro")
-        loss = self.loss(logits.view(-1, logits.shape[-1]), labels.view(-1))
+        loss = self.loss(logits_no_pad.view(-1, logits_no_pad.shape[-1]), labels_no_pad.view(-1))
         return loss, f1
 
     def configure_optimizers(self):
