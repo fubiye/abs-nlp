@@ -27,6 +27,6 @@ from absnlp.util.init import  bootstrap
 
 if __name__ == "__main__":
     args = bootstrap()
-    trainer = TRAINERS[args.model_name]()
-    trainer.train()
+    trainer = TRAINERS[args.model_name](args)
+    trainer.main()
 

@@ -1,7 +1,7 @@
 import logging
 import os
 import torch
-from utils.utils_metrics import get_entities
+from absnlp.util.metrics import get_entities
 
 logger = logging.getLogger(__name__)
 
