@@ -32,7 +32,8 @@ class NerTrainer():
         self.args.pad_token_label_id = self.loss.ignore_index
         self.model_config(self.args)
         self.init_tokenizer(self.args)
-
+        self.init_model(self.args)
+        
     def model_config(self, args):
         self.config = AutoConfig.from_pretrained(
             args.pt_model_name_or_path,
@@ -52,3 +53,5 @@ class NerTrainer():
             cache_dir=args.transformers_cache_dir,
             **tokenizer_args,
         )
+    def init_model(self, args):
+        pass
