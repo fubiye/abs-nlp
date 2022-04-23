@@ -33,6 +33,7 @@ class SoftmaxNerTrainer(NerTrainer):
         self.model.to(args.device)
         
     def train(self):
-        super().train()
+        global_step, tr_loss = super().train()
+        logger.info(" global_step = %s, average loss = %s", global_step, tr_loss)
         
         

@@ -65,6 +65,11 @@ class ParserInit():
         parser.add_argument("--do_train", default=True, action="store_true", help="Whether to run training.")
         parser.add_argument("--do_eval", default=True, action="store_true", help="Whether to run eval on the dev set.")
         parser.add_argument("--do_predict", action="store_true", help="Whether to run predictions on the test set.")
+        parser.add_argument(
+            "--evaluate_during_training",
+            action="store_true",
+            help="Whether to run evaluation during training at each logging step.",
+        )
         parser.add_argument("--learning_rate", default=5e-5, type=float, help="The initial learning rate for Adam.")
         parser.add_argument("--bert_lr", type=float, help="The initial learning rate for BERT.")
         parser.add_argument("--classifier_lr", type=float, help="The initial learning rate of classifier.")

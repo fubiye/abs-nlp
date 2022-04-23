@@ -1,1 +1,1 @@
-python train.py --output_dir=output --do_train
+python train.py --output_dir=output --do_train --evaluate_during_training
