@@ -26,8 +26,12 @@ class ParserInit():
         self.parser.add_argument('--cache_dir', default=cache_path, type=str, help="the path to store data")
         glove_cache_path = os.path.join(cache_path,'glove')
         self.parser.add_argument('--glove_cache',default=glove_cache_path,type=str, help="cache dir for glove")
-        self.parser.add_argument('--dataset', default='conll2003', type=str, help="which dataset to load")
+        self.parser.add_argument('--dataset', default='conlldev', type=str, help="which dataset to load")
         self.parser.add_argument('--labels', default='labels.txt', type=str)
+        self.parser.add_argument('--max_seq_length', default=128)
+        self.parser.add_argument(
+            "--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets"
+        )
         self.parser.add_argument('--num_of_tags', default=9, help='total count of tags')
         
     def add_training_params(self):

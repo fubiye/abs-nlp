@@ -4,6 +4,7 @@ import torch
 from absnlp.model.transformers.model_ner import AutoModelForSoftmaxNer
 
 from absnlp.train.trainer import NerTrainer
+from absnlp.data.util import load_and_cache_examples
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,9 @@ class SoftmaxNerTrainer(NerTrainer):
     def main(self):
         logger.info("start train softmax NER model...")
         self.setup()
+        if self.args.do_train:
+            self.train()
+
 
     def init_model(self, args):
         self.model = AutoModelForSoftmaxNer.from_pretrained(
@@ -29,4 +33,9 @@ class SoftmaxNerTrainer(NerTrainer):
         self.model.to(args.device)
         
     def train(self):
-        pass
+        train_dataset = load_and_cache_examples(
+                            self.args, 
+                            self.tokenizer, 
+                            self.labels, 
+                            self.args.pad_token_label_id, 
+                            mode='train')
