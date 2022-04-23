@@ -52,9 +52,9 @@ class ExampleDataset(Dataset):
             token_tag_ids = []
             for word_id in word_ids:
                 if word_id is None:
-                    token_tag_ids.append(0)
+                    token_tag_ids.append(-100)
                 elif word_id == previous_word_id:
-                    token_tag_ids.append(-1000)
+                    token_tag_ids.append(-100)
                 else:
                     token_tag_ids.append(tag_ids[word_id])
             self.samples.append({
@@ -91,9 +91,9 @@ if __name__ == "__main__":
         tags = batch['tag_ids']
         mask = (tags != 0) & (tags != -1000)
         logits_no_pad, tags_no_pad = logits[mask], tags[mask]
-        # pred = softmax(logits)
-        # pred = torch.argmax(pred, dim=-1)
-        # pred_no_pad, labels_no_pad = pred[mask], labels[mask]
+        pred = softmax(logits)
+        pred = torch.argmax(pred, dim=-1)
+        pred_no_pad, labels_no_pad = pred[mask], labels[mask]
         # f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=self.num_labels, average="macro")
-        loss = loss_fn(logits_no_pad.view(-1, logits_no_pad.shape[-1]), tags_no_pad.view(-1))
+        loss = loss_fn(logits.view(-1, logits.shape[-1]), tags.view(-1))
         print(loss)

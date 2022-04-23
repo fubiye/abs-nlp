@@ -17,7 +17,7 @@ class BertNerModule(pl.LightningModule):
         self.bert = BertModel.from_pretrained('bert-base-uncased')
         self.dropout = nn.Dropout(self.encoder_conf.dropout)
         self.linear = nn.Linear(768, self.num_labels)
-        self.loss = nn.CrossEntropyLoss(ignore_index=0)
+        self.loss = nn.CrossEntropyLoss()
         self.softmax = nn.Softmax(dim=-1)
 
     def forward(self, batch):
@@ -45,13 +45,13 @@ class BertNerModule(pl.LightningModule):
     def _shared_step(self, batch: dict, batch_idx: int):
         tag_ids = batch["tag_ids"]
         forward_output = self.forward(batch)
-        loss, f1 = self._evaluate(forward_output, tag_ids)
+        attention_mask=batch['attention_mask']
+        loss, f1 = self._evaluate(forward_output, tag_ids, attention_mask)
         return loss, f1
 
-    def _evaluate(self, logits, labels):
+    def _evaluate(self, logits, labels, mask):
         pred = self.softmax(logits)
         pred = torch.argmax(pred, dim=-1)
-        mask = (labels != 0) & (labels != -100)
         pred_no_pad, labels_no_pad, logits_no_pad = pred[mask], labels[mask], logits[mask]
         f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=self.num_labels, average="macro")
         loss = self.loss(logits_no_pad.view(-1, logits_no_pad.shape[-1]), labels_no_pad.view(-1))
