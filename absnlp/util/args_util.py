@@ -29,6 +29,7 @@ class ParserInit():
         self.parser.add_argument('--num_of_tags', default=9, help='total count of tags')
         
     def add_training_params(self):
+        self.parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
         self.parser.add_argument('--epoches',default=10,type=int)
         self.parser.add_argument('--batch_size', default=100, type=int, help='batch size')
     
