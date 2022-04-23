@@ -249,7 +249,8 @@ def classification_report(true_entities, pred_entities, digits=5):
 
     headers = ["precision", "recall", "f1-score", "support"]
     head_fmt = u'{:>{width}s} ' + u' {:>9}' * len(headers)
-    report = head_fmt.format(u'', *headers, width=width)
+    report = u'\n'
+    report += head_fmt.format(u'', *headers, width=width)
     report += u'\n\n'
 
     row_fmt = u'{:>{width}s} ' + u' {:>9.{digits}f}' * 3 + u' {:>9}\n'
