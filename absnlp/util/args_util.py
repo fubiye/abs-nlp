@@ -28,7 +28,7 @@ class ParserInit():
         parser.add_argument('--glove_cache',default=glove_cache_path,type=str, help="cache dir for glove")
         parser.add_argument('--dataset', default='conlldev', type=str, help="which dataset to load")
         parser.add_argument('--labels', default='labels.txt', type=str)
-        parser.add_argument('--max_seq_length', default=128)
+        parser.add_argument('--max_seq_length', default=128, type=int)
         parser.add_argument(
             "--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets"
         )

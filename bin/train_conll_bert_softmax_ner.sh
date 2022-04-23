@@ -1,5 +1,5 @@
 #!/bin/bash
-
+DATASET='conll2003'
 MODEL_TYPE='bert'
 MODEL_NAME_OR_PATH='bert-base-uncased'
 OUTPUT_DIR='output/bert'
@@ -8,7 +8,7 @@ python train.py \
 --model_type $MODEL_TYPE \
 --model_name_or_path $MODEL_NAME_OR_PATH \
 --output_dir $OUTPUT_DIR \
---overwrite_output_dir \
+--dataset $DATASET \
 --do_train \
 --do_eval \
 --evaluate_during_training \
