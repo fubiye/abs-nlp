@@ -21,6 +21,7 @@ class NerTrainer():
     def setup(self):
         self.prepare_dataset()
         self.prepare_training()
+        logger.info("Training/evaluation parameters %s", self.args)
 
     def prepare_dataset(self):
         labels_path = os.path.join(self.args.cache_dir, self.args.dataset, self.args.labels)
@@ -33,7 +34,7 @@ class NerTrainer():
         self.model_config(self.args)
         self.init_tokenizer(self.args)
         self.init_model(self.args)
-        
+
     def model_config(self, args):
         self.config = AutoConfig.from_pretrained(
             args.pt_model_name_or_path,
