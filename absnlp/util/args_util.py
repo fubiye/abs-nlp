@@ -44,7 +44,7 @@ class ParserInit():
 
     def add_model_parameters(self):
         self.parser.add_argument('--ckpt_dir',default='checkpoints')
-        self.parser.add_argument('--model_name', default='rnn')
+        self.parser.add_argument('--model_name', default='bert-softmax')
 
 
 

@@ -1,7 +1,7 @@
 from omegaconf import DictConfig
 from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
 from hydra.utils import instantiate
-
+from absnlp.train.bert_softmax import SoftmaxNerTrainer
 class TrainManager:
 
     def __init__(self, conf: DictConfig):
@@ -18,3 +18,7 @@ class TrainManager:
         if train_conf.model_checkpoint is not None:
             model_checkpoint: ModelCheckpoint = instantiate(train_conf.model_checkpoint)
             self.callbacks.append(model_checkpoint)
+
+TRAINERS = {
+    'bert-softmax': SoftmaxNerTrainer
+}
