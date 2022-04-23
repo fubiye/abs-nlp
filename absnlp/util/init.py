@@ -1,10 +1,14 @@
 import logging
-
+import torch
 from absnlp.util.args_util import ParserInit
 
+logger = logging.getLogger(__name__)
+
 def bootstrap():
-    args = parse_arguments()
     config_logging()
+    logger.info("start bootstraping application")
+    args = parse_arguments()
+    detect_device(args)
     return args
 
 def parse_arguments():
@@ -16,3 +20,8 @@ def config_logging():
         datefmt="%m/%d/%Y %H:%M:%S",
         level=logging.INFO
     )
+
+def detect_device(args):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    args.device = device
+    logger.info("using device: %s", device)
