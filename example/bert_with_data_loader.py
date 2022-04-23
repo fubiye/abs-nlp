@@ -1,6 +1,7 @@
 from torch.utils.data import Dataset,DataLoader
 from transformers import AutoTokenizer, AutoModel
 import torch
+from torchmetrics.functional import f1_score
 # tokens = tokenizer.convert_ids_to_tokens(tokenized_inputs.input_ids[2])
 # word_ids = tokenized_inputs.word_ids(batch_index=2)
 # for (token, word_id) in zip(tokens, word_ids):
@@ -89,11 +90,11 @@ if __name__ == "__main__":
         seq_outputs = outputs[0]
         logits = linear(seq_outputs)
         tags = batch['tag_ids']
-        mask = (tags != 0) & (tags != -1000)
+        mask = (tags != 0) & (tags != -100)
         logits_no_pad, tags_no_pad = logits[mask], tags[mask]
         pred = softmax(logits)
         pred = torch.argmax(pred, dim=-1)
-        pred_no_pad, labels_no_pad = pred[mask], labels[mask]
-        # f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=self.num_labels, average="macro")
+        pred_no_pad, labels_no_pad = pred[mask], tags[mask]
+        f1 = f1_score(pred_no_pad, labels_no_pad, num_classes=dataset.tags_len, average="macro")
         loss = loss_fn(logits.view(-1, logits.shape[-1]), tags.view(-1))
-        print(loss)
+        print(f1, loss)

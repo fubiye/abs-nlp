@@ -1,2 +1,8 @@
 encoder:
   dropout: 0.2
+  _target_: torch.nn.LSTM
+  bidirectional: True
+  hidden_size: 768
+  input_size: 300
+  dropout: 0.2
+  num_layers: 2

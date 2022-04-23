@@ -15,8 +15,12 @@ class BertNerModule(pl.LightningModule):
         self.encoder_conf = self.conf.model.encoder
         self.num_labels = vocab_sizes["ner_labels"]
         self.bert = BertModel.from_pretrained('bert-base-uncased')
+        self.encoder = instantiate(self.encoder_conf)
+        hidden_size = self.encoder_conf.hidden_size
+        bi_direction = self.encoder_conf.bidirectional
+        linear_input_size = (hidden_size * 2 if bi_direction else hidden_size)
         self.dropout = nn.Dropout(self.encoder_conf.dropout)
-        self.linear = nn.Linear(768, self.num_labels)
+        self.linear = nn.Linear(linear_input_size, self.num_labels)
         self.loss = nn.CrossEntropyLoss()
         self.softmax = nn.Softmax(dim=-1)
 
@@ -24,7 +28,8 @@ class BertNerModule(pl.LightningModule):
         outputs = self.bert(input_ids=batch['input_ids'], token_type_ids=batch['token_type_ids'],attention_mask=batch['attention_mask'])
         sequence_output = outputs[0]
         sequence_output = self.dropout(sequence_output)
-        return self.linear(sequence_output)
+        out_lstm, _ = self.encoder(sequence_output)
+        return self.linear(out_lstm)
 
     def training_step(self, batch: dict, batch_idx: int) -> torch.Tensor:
         loss, f1 = self._shared_step(batch, batch_idx)
