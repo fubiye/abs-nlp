@@ -1,1 +1,1 @@
-python train.py --output_dir=output --do_train --evaluate_during_training --batch_size=32
+python train.py --output_dir=output --do_eval --evaluate_during_training --batch_size=32

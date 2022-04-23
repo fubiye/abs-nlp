@@ -1,8 +1,14 @@
 import logging
 import os
 import torch
-from absnlp.model.transformers.model_ner import AutoModelForSoftmaxNer
+from transformers import (
+    AdamW,
+    AutoConfig,
+    AutoTokenizer,
+    get_linear_schedule_with_warmup,
+)
 
+from absnlp.model.transformers.model_ner import AutoModelForSoftmaxNer
 from absnlp.train.trainer import NerTrainer
 
 
@@ -19,9 +25,21 @@ class SoftmaxNerTrainer(NerTrainer):
     def main(self):
         logger.info("start train softmax NER model...")
         self.setup()
-        if self.args.do_train:
-            self.train(self.args)
-
+        args = self.args
+        if args.do_train:
+            self.init_train_tokenizer(args)
+            self.init_model(args)
+            self.train(args)
+        if args.do_eval:
+            tokenizer = AutoTokenizer.from_pretrained(args.output_dir, **self.tokenizer_args)
+            checkpoint = os.path.join(args.output_dir, 'best_checkpoint')
+            model = AutoModelForSoftmaxNer.from_pretrained(checkpoint)
+            model.to(args.device)
+            results, _ = self.evaluate(args, model, tokenizer, self.labels, args.pad_token_label_id, mode="dev", prefix='dev')
+            output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
+            with open(output_eval_file, "a") as writer:
+                writer.write('***** Predict in dev dataset *****')
+                writer.write("{} = {}\n".format('report', str(results['report'])))
 
     def init_model(self, args):
         self.model = AutoModelForSoftmaxNer.from_pretrained(
@@ -48,6 +66,5 @@ class SoftmaxNerTrainer(NerTrainer):
 
         # Good practice: save your training arguments together with the trained model
         torch.save(args, os.path.join(args.output_dir, "training_args.bin"))
-
         
         

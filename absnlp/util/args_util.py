@@ -62,8 +62,8 @@ class ParserInit():
             required=True,
             help="The output directory where the model predictions and checkpoints will be written.",
         )
-        parser.add_argument("--do_train", default=True, action="store_true", help="Whether to run training.")
-        parser.add_argument("--do_eval", default=True, action="store_true", help="Whether to run eval on the dev set.")
+        parser.add_argument("--do_train",action="store_true", help="Whether to run training.")
+        parser.add_argument("--do_eval", action="store_true", help="Whether to run eval on the dev set.")
         parser.add_argument("--do_predict", action="store_true", help="Whether to run predictions on the test set.")
         parser.add_argument(
             "--evaluate_during_training",

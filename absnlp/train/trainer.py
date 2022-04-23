@@ -278,7 +278,6 @@ class NerTrainer():
         self.args.pad_token_label_id = self.loss.ignore_index
         self.model_config(self.args)
         self.init_tokenizer(self.args)
-        self.init_model(self.args)
 
     def model_config(self, args):
         self.config = AutoConfig.from_pretrained(
@@ -292,12 +291,14 @@ class NerTrainer():
         setattr(self.config, 'loss_type', args.loss_type)
         #####
     def init_tokenizer(self,args):
-        tokenizer_args = {k: v for k, v in vars(self.args).items() if v is not None and k in TOKENIZER_ARGS}
-        logger.info("Tokenizer arguments: %s", tokenizer_args)
+        self.tokenizer_args = {k: v for k, v in vars(self.args).items() if v is not None and k in TOKENIZER_ARGS}
+        logger.info("Tokenizer arguments: %s", self.tokenizer_args)
+        
+    def init_train_tokenizer(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(
             args.model_name_or_path,
             cache_dir=args.transformers_cache_dir,
-            **tokenizer_args,
+            **self.tokenizer_args,
         )
     def init_model(self, args):
         pass
