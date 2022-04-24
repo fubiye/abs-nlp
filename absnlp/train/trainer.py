@@ -34,7 +34,7 @@ class NerTrainer():
                                   batch_size=args.batch_size,
                                   collate_fn=collate_fn)
         self.t_total = self.calc_training_steps(args)
-        optimizer, scheduler = self.prepare_optimizer_and_scheduler(args)
+        self.optimizer, self.scheduler = self.prepare_optimizer_and_scheduler(args)
         self.print_training_info(args)
         self.init_training_metrics()
         self.model.zero_grad()
@@ -56,40 +56,26 @@ class NerTrainer():
                 epoch_iterator.set_description('Loss: {}'.format(round(loss.item(), 6)))
                 if (step + 1) % args.gradient_accumulation_steps == 0:
                     torch.nn.utils.clip_grad_norm_(self.model.parameters(), args.max_grad_norm)
-                    optimizer.step()
-                    scheduler.step()  # Update learning rate schedule
+                    self.optimizer.step()
+                    self.scheduler.step()  # Update learning rate schedule
                     self.model.zero_grad()
                     self.global_step += 1
 
                     if args.logging_steps > 0 and self.global_step % args.logging_steps == 0:
                         # Log metrics
                         if args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
-                            results, _ = self.evaluate(args, self.model, self.tokenizer, self.labels, args.pad_token_label_id, mode="dev",
-                                                prefix=self.global_step)
+                            results, _ = self.eval()
                             for key, value in results.items():
                                 if isinstance(value, float) or isinstance(value, int):
                                     self.tb_writer.add_scalar("eval_{}".format(key), value, self.global_step)
-                        self.tb_writer.add_scalar("lr", scheduler.get_lr()[0], self.global_step)
+                        self.tb_writer.add_scalar("lr", self.scheduler.get_lr()[0], self.global_step)
                         self.tb_writer.add_scalar("loss", (self.tr_loss - self.logging_loss) / args.logging_steps, self.global_step)
                         self.logging_loss = self.tr_loss
 
                         if self.best_score < results['f1']:
                             self.best_score = results['f1']
                             output_dir = os.path.join(args.output_dir, "best_checkpoint")
-                            if not os.path.exists(output_dir):
-                                os.makedirs(output_dir)
-                            model_to_save = (
-                                self.model.module if hasattr(self.model, "module") else self.model
-                            )  # Take care of distributed/parallel training
-                            model_to_save.save_pretrained(output_dir)
-                            self.tokenizer.save_pretrained(output_dir)
-
-                            torch.save(args, os.path.join(output_dir, "training_args.bin"))
-                            logger.info("Saving model checkpoint to %s", output_dir)
-
-                            torch.save(optimizer.state_dict(), os.path.join(output_dir, "optimizer.pt"))
-                            torch.save(scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
-                            logger.info("Saving optimizer and scheduler states to %s", output_dir)
+                            self.save_model(output_dir)
 
             if args.max_steps > 0 and self.global_step > args.max_steps:
                 train_iterator.close()
@@ -253,6 +239,15 @@ class NerTrainer():
     
     def batch_forward(self,args, batch):
         pass
+    def eval(self, args):
+        pass
+    def save_model(self, output_dir):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        self.do_save_model(output_dir)
+
+    def do_save_model(self, output_dir):
+        pass
 
 class TransformerNerTrainer(NerTrainer):
     def __init__(self, args):
@@ -334,6 +329,25 @@ class TransformerNerTrainer(NerTrainer):
         outputs = self.model(**inputs)
         loss = outputs[0] 
         return loss
+
+    def eval(self):
+        return self.evaluate(self.args, self.model, self.tokenizer, self.labels, args.pad_token_label_id, mode="dev",
+                                                prefix=self.global_step)
+    
+    def do_save_model(self, output_dir):
+        model_to_save = (
+            self.model.module if hasattr(self.model, "module") else self.model
+        )  # Take care of distributed/parallel training
+        model_to_save.save_pretrained(output_dir)
+        self.tokenizer.save_pretrained(output_dir)
+
+        torch.save(args, os.path.join(output_dir, "training_args.bin"))
+        logger.info("Saving model checkpoint to %s", output_dir)
+
+        torch.save(self.optimizer.state_dict(), os.path.join(output_dir, "optimizer.pt"))
+        torch.save(self.scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
+        logger.info("Saving optimizer and scheduler states to %s", output_dir)
+
 class GloveNerTrainer(NerTrainer):
     def __init__(self, args):
         super(GloveNerTrainer, self).__init__(args)
@@ -358,12 +372,11 @@ class GloveNerTrainer(NerTrainer):
         scheduler = ExponentialLR(optimizer, gamma=0.9)
 
         # Check if saved optimizer or scheduler states exist
-        if os.path.isfile(os.path.join(args.model_name_or_path, "optimizer.pt")) and os.path.isfile(
-                os.path.join(args.model_name_or_path, "scheduler.pt")
-        ):
+        output_dir = os.path.join(args.output_dir, args.model_name)
+        if os.path.isfile(os.path.join(output_dir, "optimizer.pt")) and os.path.isfile(os.path.join(output_dir, "scheduler.pt")):
             # Load in optimizer and scheduler states
-            optimizer.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "optimizer.pt")))
-            scheduler.load_state_dict(torch.load(os.path.join(args.model_name_or_path, "scheduler.pt")))
+            optimizer.load_state_dict(torch.load(os.path.join(output_dir, "optimizer.pt")))
+            scheduler.load_state_dict(torch.load(os.path.join(output_dir, "scheduler.pt")))
         return optimizer, scheduler
     
     def batch_forward(self, args, batch):
@@ -374,3 +387,91 @@ class GloveNerTrainer(NerTrainer):
         outputs = self.model(**inputs)
         loss = outputs[0] 
         return loss
+    def eval(self):
+        args, model, vocab, labels, prefix, pad_token_label_id = self.args, self.model, self.vocab, self.labels, self.global_step, self.args.pad_token_label_id,
+        eval_dataset = load_dataset_with_vocab(
+            args, 
+            vocab, 
+            labels, 
+            pad_token_label_id,
+            'dev'
+            )
+        eval_sampler = SequentialSampler(eval_dataset)
+        eval_dataloader = DataLoader(eval_dataset,
+                                 sampler=eval_sampler,
+                                 batch_size=args.batch_size)
+        # Eval!
+        logger.info("***** Running evaluation %s *****", prefix)
+        logger.info("  Num examples = %d", len(eval_dataset))
+        logger.info("  Batch size = %d", args.batch_size)
+        eval_loss = 0.0
+        nb_eval_steps = 0
+        preds = None
+        trues = None
+        model.eval()
+        for batch in tqdm(eval_dataloader, desc="Evaluating"):
+            batch = tuple(t.to(args.device) for t in batch)
+
+            with torch.no_grad():
+                inputs = {
+                    "input_ids": batch[0],
+                    "labels": batch[1]
+                }
+                
+                outputs = model(**inputs)
+                tmp_eval_loss, logits = outputs[:2]                
+                eval_loss += tmp_eval_loss.item()
+
+            nb_eval_steps += 1
+            if preds is None:
+                preds = logits.detach().cpu().numpy()
+                trues = inputs["labels"].detach().cpu().numpy()
+            else:
+                preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
+                trues = np.append(trues, inputs["labels"].detach().cpu().numpy(), axis=0)
+            
+        eval_loss = eval_loss / nb_eval_steps
+        preds = np.argmax(preds, axis=2)
+        label_map = {i: label for i, label in enumerate(labels)}
+        
+        trues_list = [[] for _ in range(trues.shape[0])]
+        preds_list = [[] for _ in range(preds.shape[0])]
+
+        for i in range(trues.shape[0]):
+            for j in range(trues.shape[1]):
+                if trues[i, j] != pad_token_label_id:
+                    trues_list[i].append(label_map[trues[i][j]])
+                    preds_list[i].append(label_map[preds[i][j]])
+        true_entities = get_entities_bio(trues_list)
+        pred_entities = get_entities_bio(preds_list)
+        results = {
+            "loss": eval_loss,
+            "f1": f1_score(true_entities, pred_entities),
+            'report': classification_report(true_entities, pred_entities)
+        }
+        output_dir = os.path.join(args.output_dir, args.model_name)
+        output_eval_file = os.path.join(output_dir, "eval_results.txt")
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        with open(output_eval_file, "a") as writer:
+            logger.info("***** Eval results {} *****".format(prefix))
+            writer.write("***** Eval results {} *****\n".format(prefix))
+            writer.write("***** Eval loss : {} *****\n".format(eval_loss))
+            for key in sorted(results.keys()):
+                if key == 'report_dict':
+                    continue
+                logger.info("{} = {}".format(key, str(results[key])))
+                writer.write("{} = {}\n".format(key, str(results[key])))
+        return results, preds_list
+    
+    def do_save_model(self, output_dir):
+
+        torch.save(self.model.state_dict(), os.path.join(output_dir, 'pytorch_model.bin'))
+        torch.save(self.vocab, os.path.join(output_dir, 'pytorch_model.bin'))
+
+        torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
+        logger.info("Saving model checkpoint to %s", output_dir)
+
+        torch.save(self.optimizer.state_dict(), os.path.join(output_dir, "optimizer.pt"))
+        torch.save(self.scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
+        logger.info("Saving optimizer and scheduler states to %s", output_dir)
