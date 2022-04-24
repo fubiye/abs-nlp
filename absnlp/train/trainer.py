@@ -320,7 +320,8 @@ class TransformerNerTrainer(NerTrainer):
         )
 class GloveNerTrainer(NerTrainer):
     def __init__(self, args):
-        super(NerTrainer, self).__init__(args)
+        super(GloveNerTrainer, self).__init__(args)
     
     def init_train_tokenizer(self, args):
         self.vocab, self.embeddings = load_glove(args)
+        args.vocab_size = len(self.vocab)

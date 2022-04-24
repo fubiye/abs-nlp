@@ -1,14 +1,15 @@
 import logging
-import torch 
+import torch
 
 from absnlp.train.trainer import GloveNerTrainer
+from absnlp.model.rnn.bilstm_ner import BiLstmSoftmaxModel
 
 logger = logging.getLogger(__name__)
 
-class BiLstmSoftMaxNerTrainer(GloveNerTrainer):
+class BiLstmSoftmaxNerTrainer(GloveNerTrainer):
     
     def __init__(self, args):
-        super(GloveNerTrainer, self).__init__(args)
+        super(BiLstmSoftmaxNerTrainer, self).__init__(args)
         self.args = args
         self.loss = torch.nn.CrossEntropyLoss(ignore_index=0)
 
@@ -20,4 +21,6 @@ class BiLstmSoftMaxNerTrainer(GloveNerTrainer):
             self.init_train_tokenizer(args)
             self.init_model(args)
             # self.train(args)
-        
+
+    def init_model(self, args):
+        self.model = BiLstmSoftmaxModel(args)

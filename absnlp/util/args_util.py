@@ -32,7 +32,7 @@ class ParserInit():
         parser.add_argument(
             "--overwrite_cache", action="store_true", help="Overwrite the cached training and evaluation sets"
         )
-        parser.add_argument('--num_of_tags', default=9, help='total count of tags')
+        parser.add_argument('--num_labels', default=9, help='total count of tags')
         
     def add_training_params(self, parser):
         parser.add_argument("--seed", type=int, default=42, help="random seed for initialization")
@@ -89,6 +89,8 @@ class ParserInit():
         # Model Hyper Parameters
         # LSTM 
         parser.add_argument('--lstm_hidden_dim', default=100, type=int, help='hidden dim for lstm')
+        parser.add_argument('--lstm_bid', default=True, type=bool, help='lstm bidirectional')
+        parser.add_argument('--dropout_rate', default=0.2, type=float)
 
     def add_model_parameters(self, parser):
         parser.add_argument('--ckpt_dir',default='checkpoints')
