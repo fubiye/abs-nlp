@@ -22,6 +22,12 @@ class InputExample(object):
         self.words = words
         self.labels = labels
 
+class SimpleFeatures(object):
+    """A single set of features of data."""
+
+    def __init__(self, input_ids, label_ids,):
+        self.input_ids = input_ids
+        self.label_ids = label_ids
 
 class InputFeatures(object):
     """A single set of features of data."""
@@ -34,7 +40,6 @@ class InputFeatures(object):
         self.label_ids = label_ids
         self.start_ids = start_ids
         self.end_ids = end_ids
-
 
 def read_examples_from_file(data_dir, mode):
     file_path = os.path.join(data_dir, "{}.txt".format(mode))
@@ -211,6 +216,57 @@ def convert_examples_to_features(
                           label_ids=label_ids,
                           start_ids=start_ids,
                           end_ids=end_ids)
+        )
+    return features
+
+def to_features_with_vocab(
+        examples,
+        label_list,
+        max_seq_length,
+        vocab,
+        pad_token_label_id = 0
+):
+
+    label_map = {label: i for i, label in enumerate(label_list)}
+    span_labels = []
+    for label in label_list:
+        label = label.split('-')[-1]
+        if label not in span_labels:
+            span_labels.append(label)
+    span_map = {label: i for i, label in enumerate(span_labels)}
+    features = []
+    for (ex_index, example) in enumerate(examples):
+        if ex_index % 10000 == 0:
+            logger.info("Writing example %d of %d", ex_index, len(examples))
+
+        label_ids = [label_map[label] for label in example.labels]
+
+        words = example.words
+        if len(words) > max_seq_length:
+            words = words[:max_seq_length]
+            label_ids = label_ids[:max_seq_length]
+
+        input_ids = vocab(words)
+
+        # Zero-pad up to the sequence length.
+        padding_length = max_seq_length - len(input_ids)
+
+        input_ids += [pad_token_label_id] * padding_length
+        label_ids += [pad_token_label_id] * padding_length
+    
+        assert len(input_ids) == max_seq_length
+        assert len(label_ids) == max_seq_length
+        
+        if ex_index < 5:
+            logger.info("*** Example ***")
+            logger.info("guid: %s", example.guid)
+            logger.info("words: %s", " ".join([str(x) for x in words]))
+            logger.info("input_ids: %s", " ".join([str(x) for x in input_ids]))
+            logger.info("label_ids: %s", " ".join([str(x) for x in label_ids]))
+            
+        features.append(
+            SimpleFeatures(input_ids=input_ids,
+                          label_ids=label_ids)
         )
     return features
 
