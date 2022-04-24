@@ -11,6 +11,7 @@ except ImportError:
 from tqdm import tqdm, trange
 from absnlp.util.ner import get_labels, collate_fn
 from absnlp.data.util import load_and_cache_examples
+from absnlp.util.vocab import load_glove
 from absnlp.util.metrics import get_entities_bio, f1_score, classification_report
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ TOKENIZER_ARGS = ["do_lower_case", "strip_accents", "keep_accents", "use_fast"]
 class NerTrainer():
     def __init__(self, args):
         pass
+    
     def train(self):
         args = self.args
         self.tb_writer = SummaryWriter(args.output_dir)
@@ -273,12 +275,28 @@ class NerTrainer():
         self.labels = get_labels(labels_path)
         self.num_labels = len(self.labels)
         logger.info("dataset: %s labels(%d): %s", self.args.dataset, self.num_labels, ', '.join(self.labels))
-    
     def prepare_training(self):
+        self.args.default_index = self.loss.ignore_index
         self.args.pad_token_label_id = self.loss.ignore_index
         self.model_config(self.args)
         self.init_tokenizer(self.args)
 
+    def model_config(self, args):
+        pass
+
+    def init_tokenizer(self,args):
+        pass
+    
+    def init_train_tokenizer(self, args):
+        pass
+
+    def init_model(self, args):
+        pass
+
+class TransformerNerTrainer(NerTrainer):
+    def __init__(self, args):
+        super(NerTrainer, self).__init__(args)
+    
     def model_config(self, args):
         self.config = AutoConfig.from_pretrained(
             args.model_name_or_path,
@@ -293,12 +311,16 @@ class NerTrainer():
     def init_tokenizer(self,args):
         self.tokenizer_args = {k: v for k, v in vars(self.args).items() if v is not None and k in TOKENIZER_ARGS}
         logger.info("Tokenizer arguments: %s", self.tokenizer_args)
-        
+    
     def init_train_tokenizer(self, args):
         self.tokenizer = AutoTokenizer.from_pretrained(
             args.model_name_or_path,
             cache_dir=args.transformers_cache_dir,
             **self.tokenizer_args,
         )
-    def init_model(self, args):
-        pass
+class GloveNerTrainer(NerTrainer):
+    def __init__(self, args):
+        super(NerTrainer, self).__init__(args)
+    
+    def init_train_tokenizer(self, args):
+        self.vocab, self.embeddings = load_glove(args)

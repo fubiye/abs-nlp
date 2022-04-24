@@ -9,16 +9,16 @@ from transformers import (
 )
 
 from absnlp.model.transformers.model_ner import AutoModelForSoftmaxNer
-from absnlp.train.trainer import NerTrainer
+from absnlp.train.trainer import TransformerNerTrainer
 
 
 logger = logging.getLogger(__name__)
 
 
-class SoftmaxNerTrainer(NerTrainer):
+class SoftmaxNerTrainer(TransformerNerTrainer):
     
     def __init__(self, args):
-        super(NerTrainer, self).__init__()
+        super(TransformerNerTrainer, self).__init__()
         self.args = args
         self.loss = torch.nn.CrossEntropyLoss()
 
