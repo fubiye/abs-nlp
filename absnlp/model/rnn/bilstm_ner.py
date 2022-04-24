@@ -4,8 +4,8 @@ from torch.nn import Module, Embedding, LSTM, Dropout, Linear
 from absnlp.model.losses.label_smoothing import LabelSmoothingCrossEntropy
 
 class BiLstmSoftmaxModel(Module):
-    
-    def __init__(self, args,  pretrained_embeddings):
+     
+    def __init__(self, args):
         super(BiLstmSoftmaxModel, self).__init__()
         self.embedding = Embedding(args.vocab_size, args.embedding_dim,padding_idx=args.default_index)
         self.dropout = Dropout(args.dropout_rate)
@@ -16,7 +16,7 @@ class BiLstmSoftmaxModel(Module):
         self.loss_type = args.loss_type
         self.ignore_index = args.default_index
         self.num_labels = args.num_labels
-        self.init_weights(pretrained_embeddings)
+        
     
     def save_pretrained(self, output_dir):
         path = os.path.join(output_dir, 'pytorch_model.bin')

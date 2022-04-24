@@ -64,7 +64,7 @@ class NerTrainer():
                     if args.logging_steps > 0 and self.global_step % args.logging_steps == 0:
                         # Log metrics
                         if args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
-                            results, _ = self.eval()
+                            results, _ = self.eval(self.model, self.vocab, self.global_step)
                             for key, value in results.items():
                                 if isinstance(value, float) or isinstance(value, int):
                                     self.tb_writer.add_scalar("eval_{}".format(key), value, self.global_step)
@@ -330,9 +330,9 @@ class TransformerNerTrainer(NerTrainer):
         loss = outputs[0] 
         return loss
 
-    def eval(self):
+    def eval(self, model, vocab, prefix):
         return self.evaluate(self.args, self.model, self.tokenizer, self.labels, args.pad_token_label_id, mode="dev",
-                                                prefix=self.global_step)
+                                                prefix=prefix)
     
     def do_save_model(self, output_dir):
         model_to_save = (
@@ -387,8 +387,8 @@ class GloveNerTrainer(NerTrainer):
         outputs = self.model(**inputs)
         loss = outputs[0] 
         return loss
-    def eval(self):
-        args, model, vocab, labels, prefix, pad_token_label_id = self.args, self.model, self.vocab, self.labels, self.global_step, self.args.pad_token_label_id,
+    def eval(self, model, vocab, prefix):
+        args, labels, pad_token_label_id = self.args, self.labels, self.args.pad_token_label_id,
         eval_dataset = load_dataset_with_vocab(
             args, 
             vocab, 

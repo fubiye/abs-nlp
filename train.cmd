@@ -1,1 +1,1 @@
-python train.py --output_dir=output --do_train --evaluate_during_training --batch_size=8 --model_name=bilstm-softmax --model_name_or_path=lstm-glove-6B-100
+python train.py --output_dir=output --do_eval --evaluate_during_training --batch_size=8 --model_name=bilstm-softmax --model_name_or_path=lstm-glove-6B-100
