@@ -63,22 +63,22 @@ def load_dataset_with_vocab(args, vocab, labels, pad_token_label_id, mode):
             mode, list(filter(None, args.model_name_or_path.split("/"))).pop(), str(args.max_seq_length)
         ),
     )
-    if os.path.exists(cached_features_file) and not args.overwrite_cache:
-        logger.info("Loading features from cached file %s", cached_features_file)
-        features = torch.load(cached_features_file)
-    else:
-        logger.info("Creating features from dataset file at %s", dataset_path)
-        examples = read_examples_from_file(dataset_path, mode)
-        features = to_features_with_vocab(
-            examples,
-            labels,
-            args.max_seq_length,
-            vocab,
-            pad_token_label_id
-        )
-        
-        logger.info("Saving features into cached file %s", cached_features_file)
-        torch.save(features, cached_features_file)
+    # if os.path.exists(cached_features_file) and not args.overwrite_cache:
+    #     logger.info("Loading features from cached file %s", cached_features_file)
+    #     features = torch.load(cached_features_file)
+    # else:
+    logger.info("Creating features from dataset file at %s", dataset_path)
+    examples = read_examples_from_file(dataset_path, mode)
+    features = to_features_with_vocab(
+        examples,
+        labels,
+        args.max_seq_length,
+        vocab,
+        pad_token_label_id
+    )
+    
+    logger.info("Saving features into cached file %s", cached_features_file)
+    torch.save(features, cached_features_file)
     
     # Convert to Tensors and build dataset
     all_input_ids = torch.tensor([f.input_ids for f in features], dtype=torch.long)

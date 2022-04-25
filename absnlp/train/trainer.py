@@ -3,7 +3,7 @@ import logging
 import numpy as np
 import torch
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
-from torch.optim import Adam
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import ExponentialLR
 from transformers import AutoConfig, AutoTokenizer, AdamW, get_linear_schedule_with_warmup
 try:
@@ -368,15 +368,15 @@ class GloveNerTrainer(NerTrainer):
         
         parameters = self.model.parameters()
         
-        optimizer = Adam(parameters, lr=args.learning_rate, eps=args.adam_epsilon)
+        optimizer = SGD(parameters, lr=args.learning_rate)
         scheduler = ExponentialLR(optimizer, gamma=0.9)
 
-        # Check if saved optimizer or scheduler states exist
-        output_dir = os.path.join(args.output_dir, args.model_name)
-        if os.path.isfile(os.path.join(output_dir, "optimizer.pt")) and os.path.isfile(os.path.join(output_dir, "scheduler.pt")):
-            # Load in optimizer and scheduler states
-            optimizer.load_state_dict(torch.load(os.path.join(output_dir, "optimizer.pt")))
-            scheduler.load_state_dict(torch.load(os.path.join(output_dir, "scheduler.pt")))
+        # # Check if saved optimizer or scheduler states exist
+        # output_dir = os.path.join(args.output_dir, args.model_name)
+        # if os.path.isfile(os.path.join(output_dir, "optimizer.pt")) and os.path.isfile(os.path.join(output_dir, "scheduler.pt")):
+        #     # Load in optimizer and scheduler states
+        #     optimizer.load_state_dict(torch.load(os.path.join(output_dir, "optimizer.pt")))
+        #     scheduler.load_state_dict(torch.load(os.path.join(output_dir, "scheduler.pt")))
         return optimizer, scheduler
     
     def batch_forward(self, args, batch):

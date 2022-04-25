@@ -1,1 +1,1 @@
-python train.py --output_dir=output --do_eval --evaluate_during_training --batch_size=8 --model_name=bilstm-softmax --model_name_or_path=lstm-glove-6B-100
+python train.py --output_dir=output --do_train --do_eval --evaluate_during_training --batch_size=4 --dataset=conll2003 --model_name=bilstm-softmax --model_name_or_path=lstm-glove-6B-100 --loss_type=ce --max_grad_norm=10 --learning_rate=1e-3

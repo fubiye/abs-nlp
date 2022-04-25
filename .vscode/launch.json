@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "train.py",
+      "console": "integratedTerminal",
+      "justMyCode": true,
+      "args": [
+        "--output_dir",
+        "output",
+        "--do_train",
+        "--do_eval",
+        "--evaluate_during_training",
+        "--batch_size",
+        "8",
+        "--dataset",
+        "conll2003",
+        "--model_name",
+        "bilstm-softmax",
+        "--model_name_or_path",
+        "lstm-glove-6B-100",
+        "--loss_type",
+        "ce"
+      ]
+    }
+  ]
+}

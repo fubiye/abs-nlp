@@ -1,6 +1,7 @@
 import os
 import torch 
-from torch.nn import Module, Embedding, LSTM, Dropout, Linear
+import torch.nn as nn
+from torch.nn import Module, Embedding, LSTM, Dropout, Linear, CrossEntropyLoss
 from absnlp.model.losses.label_smoothing import LabelSmoothingCrossEntropy
 
 class BiLstmSoftmaxModel(Module):
@@ -24,7 +25,14 @@ class BiLstmSoftmaxModel(Module):
 
     def init_weights(self, pretrained_embeddings):
         self.embedding.from_pretrained(pretrained_embeddings)
-
+        for name, param in self.lstm.named_parameters():
+            if name.startswith("weight"):
+                nn.init.xavier_normal_(param)
+            else:
+                nn.init.zeros_(param)
+        nn.init.xavier_normal_(self.linear.weight)
+        nn.init.zeros_(self.linear.bias)
+        
     def forward(self, input_ids, labels):
         embedding = self.embedding(input_ids)
         embedding = self.dropout(embedding)
@@ -43,6 +51,6 @@ class BiLstmSoftmaxModel(Module):
             # Only keep active parts of the loss
             
             loss = loss_fct(logits.view(-1, self.num_labels), labels.contiguous().view(-1))
-            outputs = (loss,) + outputs
+            outputs = (loss, logits)
         return outputs  # (loss), scores, (hidden_states), (attentions)
         # return outputs
